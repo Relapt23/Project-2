@@ -23,7 +23,14 @@ def update_items(table,sensors):
             table.insert('', 'end', values=[name,val,delta], tags = ('oddrow',))
         else:
             table.insert('', 'end', values=[name,val,delta])
-    
+
+
+def item_selected(event):
+    sensor = ""
+    for selected_items in table.selection():
+        item = table.item(selected_items)
+        sensor = item["values"][0]
+    print(sensor)
 
 
 root= Tk()
@@ -32,6 +39,7 @@ root.geometry("300x250+400+250")
 icon =PhotoImage(file="save_nature.png")
 root.iconphoto(False,icon)
 root.configure(background='white')
+
 
 
 # Текстовые поля
@@ -70,26 +78,38 @@ table.heading('val', text='Значение')
 table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
-
+data_base = {}
 
 # заполнение таблицы показаний датчиков
 async def update_val():
     t = 0
+    count = 0
     while True:
         sensors = [
-            ('Влажность воздуха', ran(17,40,t), 17,55), 
+            ('Влажность воздуха', ran(17,40,t), 17,40), 
             ('Влажность почвы', ran(50,55,t), 50,55), 
             ('Температура воздуха', ran(4, 27, t), 4,27), 
             ('Температура раствора', ran(0,27,t), 0,27), 
             ('Давление', ran(750,780,t), 750,780), 
             ('Уровень раствора', ran(13,15,t), 13,15), 
             ('Кислотность раствора', ran(75,80,t),75,80), 
-            ('Содержание ионов', ran(30,35,t), 30,35), 
-            ('Освещенность', ran(30,67,t), 30,67),
+            ('Содержание ионов', ran(30,35,t),30,35), 
+            ('Освещенность', ran(30,67,t),30,67),
         ]
         update_items(table,sensors)
         await asyncio.sleep(3)
+        # Построение графика
+        for i in range(len(sensors)):
+            if sensors[i][0] not in data_base.keys():
+                    data_base[sensors[i][0]] = [sensors[i][1]]
+            else:
+                data_base[sensors[i][0]].append(sensors[i][1])
+            if len(data_base[sensors[i][0]]) >=5:
+                data_base[sensors[i][0]].pop(0)
+        print(data_base)
         t += 3
-
+table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
+
+
 async_mainloop(root)
