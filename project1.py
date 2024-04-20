@@ -5,6 +5,16 @@ from math import *
 import asyncio
 from time import *
 from async_tkinter_loop import async_mainloop, async_handler
+import matplotlib.pyplot as plt
+data_base = {}
+
+
+class SensorInfo:
+    def __init__(self,name,val,delta_min,delta_max):
+        self.name=name
+        self.val=val
+        self.delta_min=delta_min
+        self.delta_max=delta_max
 
 
 def ran(min, max,t):
@@ -16,10 +26,10 @@ def ran(min, max,t):
 def update_items(table,sensors):
     table.delete(*table.get_children())
     for sensor in sensors:
-        name = sensor[0]
-        val = sensor[1]
-        delta = str(sensor[2])+'-'+str(sensor[3])
-        if int(sensor[1])<int(sensor[2]) or int(sensor[1])>int(sensor[3]):
+        name = sensor.name
+        val = sensor.val
+        delta = str(sensor.delta_min)+'-'+str(sensor.delta_max)
+        if int(sensor.val)<int(sensor.delta_min) or int(sensor.val)>int(sensor.delta_max):
             table.insert('', 'end', values=[name,val,delta], tags = ('oddrow',))
         else:
             table.insert('', 'end', values=[name,val,delta])
@@ -30,12 +40,16 @@ def item_selected(event):
     for selected_items in table.selection():
         item = table.item(selected_items)
         sensor = item["values"][0]
-    print(sensor)
-
+        if sensor in data_base.keys():
+            y_val=data_base[sensor]
+            fig = plt.figure(figsize=(8,4))
+            ax = fig.add_subplot(111)
+            ax.set(title=sensor, xlim=[0, 30], ylim=[min(y_val),max(y_val)], ylabel='Значение', xlabel='Дни')
+            plt.savefig(fname='graf4.jpg')
 
 root= Tk()
 root.title('Climat-control system')
-root.geometry("300x250+400+250")
+root.geometry("1250x500")
 icon =PhotoImage(file="save_nature.png")
 root.iconphoto(False,icon)
 root.configure(background='white')
@@ -78,7 +92,7 @@ table.heading('val', text='Значение')
 table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
-data_base = {}
+
 
 # заполнение таблицы показаний датчиков
 async def update_val():
@@ -86,27 +100,29 @@ async def update_val():
     count = 0
     while True:
         sensors = [
-            ('Влажность воздуха', ran(17,40,t), 17,40), 
-            ('Влажность почвы', ran(50,55,t), 50,55), 
-            ('Температура воздуха', ran(4, 27, t), 4,27), 
-            ('Температура раствора', ran(0,27,t), 0,27), 
-            ('Давление', ran(750,780,t), 750,780), 
-            ('Уровень раствора', ran(13,15,t), 13,15), 
-            ('Кислотность раствора', ran(75,80,t),75,80), 
-            ('Содержание ионов', ran(30,35,t),30,35), 
-            ('Освещенность', ran(30,67,t),30,67),
+            SensorInfo('Влажность воздуха', ran(17,40,t), 17,40), 
+            SensorInfo('Влажность почвы', ran(50,55,t), 50,55), 
+            SensorInfo('Температура воздуха', ran(4, 27, t), 4,27), 
+            SensorInfo('Температура раствора', ran(0,27,t), 0,27), 
+            SensorInfo('Давление', ran(750,780,t), 750,780), 
+            SensorInfo('Уровень раствора', ran(13,15,t), 13,15), 
+            SensorInfo('Кислотность раствора', ran(75,80,t),75,80), 
+            SensorInfo('Содержание ионов', ran(30,35,t),30,35), 
+            SensorInfo('Освещенность', ran(30,67,t),30,67),
         ]
         update_items(table,sensors)
         await asyncio.sleep(3)
         # Построение графика
         for i in range(len(sensors)):
-            if sensors[i][0] not in data_base.keys():
-                    data_base[sensors[i][0]] = [sensors[i][1]]
+            if sensors[i].name not in data_base.keys():
+                    data_base[sensors[i].name] = [sensors[i].val]
             else:
-                data_base[sensors[i][0]].append(sensors[i][1])
-            if len(data_base[sensors[i][0]]) >=5:
-                data_base[sensors[i][0]].pop(0)
-        print(data_base)
+                data_base[sensors[i].name].append(sensors[i].val)
+            if len(data_base[sensors[i].name]) > 4:
+                data_base[sensors[i].name].pop(0)
+            
+
+
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
