@@ -50,11 +50,6 @@ def item_selected(event):
             plt.plot(x,y)
             plt.savefig(fname='graf4.png')
 
-def graph_create():
-    graph = PhotoImage(file="graf4.png")
-    graph_label=ttk.Label(image=graph)
-    graph_label.place(x=670, y=400)
-
 
 root= Tk()
 root.title('Climat-control system')
@@ -104,7 +99,7 @@ style.theme_use('classic')
 
 graph = PhotoImage(file="graf4.png")
 graph_label=ttk.Label(image=graph)
-graph_label.place(x=670, y=400)
+graph_label.place(x=670, y=320)
 # заполнение таблицы показаний датчиков
 async def update_val():
     t = 0
@@ -130,11 +125,13 @@ async def update_val():
                 data_base[sensors[i].name].append(sensors[i].val)
             if len(data_base[sensors[i].name]) > 30:
                 data_base[sensors[i].name].pop(0)
-            graph_label.destroy
-            graph_create()
+            graph = PhotoImage(file="graf4.png")
+            graph_label=ttk.Label(image=graph)
+            graph_label.place(x=670, y=320)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
 
 
 async_mainloop(root)
+
