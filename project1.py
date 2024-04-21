@@ -45,7 +45,16 @@ def item_selected(event):
             fig = plt.figure(figsize=(8,4))
             ax = fig.add_subplot(111)
             ax.set(title=sensor, xlim=[0, 30], ylim=[min(y_val),max(y_val)], ylabel='Значение', xlabel='Дни')
-            plt.savefig(fname='graf4.jpg')
+            y=data_base[sensor]
+            x=range(1,len(y)+1)
+            plt.plot(x,y)
+            plt.savefig(fname='graf4.png')
+
+def graph_create():
+    graph = PhotoImage(file="graf4.png")
+    graph_label=ttk.Label(image=graph)
+    graph_label.place(x=670, y=400)
+
 
 root= Tk()
 root.title('Climat-control system')
@@ -93,11 +102,12 @@ table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
 
-
+graph = PhotoImage(file="graf4.png")
+graph_label=ttk.Label(image=graph)
+graph_label.place(x=670, y=400)
 # заполнение таблицы показаний датчиков
 async def update_val():
     t = 0
-    count = 0
     while True:
         sensors = [
             SensorInfo('Влажность воздуха', ran(17,40,t), 17,40), 
@@ -118,11 +128,10 @@ async def update_val():
                     data_base[sensors[i].name] = [sensors[i].val]
             else:
                 data_base[sensors[i].name].append(sensors[i].val)
-            if len(data_base[sensors[i].name]) > 4:
+            if len(data_base[sensors[i].name]) > 30:
                 data_base[sensors[i].name].pop(0)
-            
-
-
+            graph_label.destroy
+            graph_create()
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
