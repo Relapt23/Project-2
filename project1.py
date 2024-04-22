@@ -98,13 +98,12 @@ style = ttk.Style()
 style.theme_use('classic')
 
 
-# Прорисовка графика
-graph = PhotoImage(file="graf4.png")
-graph_label=ttk.Label(image=graph)
-graph_label.place(x=670, y=320)
-graph_label.destroy()
+
 # заполнение таблицы показаний датчиков
 async def update_val():
+    # Прорисовка графика
+    graph = PhotoImage(file="graf4.png")
+    graph_label=ttk.Label(image=graph)
     t = 0
     while True:
         sensors = [
@@ -129,6 +128,7 @@ async def update_val():
             if len(data_base[sensors[i].name]) > 30:
                 data_base[sensors[i].name].pop(0)
             # Обновление графика
+            graph_label.destroy()
             graph = PhotoImage(file="graf4.png")
             graph_label=ttk.Label(image=graph)
             graph_label.place(x=670, y=320)
