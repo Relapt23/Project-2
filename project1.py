@@ -34,7 +34,7 @@ def update_items(table,sensors):
         else:
             table.insert('', 'end', values=[name,val,delta])
 
-
+# формирование графика при выделении датчика
 def item_selected(event):
     sensor = ""
     for selected_items in table.selection():
@@ -97,6 +97,8 @@ table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
 
+
+# Прорисовка графика
 graph = PhotoImage(file="graf4.png")
 graph_label=ttk.Label(image=graph)
 graph_label.place(x=670, y=320)
@@ -125,11 +127,13 @@ async def update_val():
                 data_base[sensors[i].name].append(sensors[i].val)
             if len(data_base[sensors[i].name]) > 30:
                 data_base[sensors[i].name].pop(0)
+            # Обновление графика
             graph = PhotoImage(file="graf4.png")
             graph_label=ttk.Label(image=graph)
             graph_label.place(x=670, y=320)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
+graph_label.destroy()
 async_handler(update_val)()
 
 
