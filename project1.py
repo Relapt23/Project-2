@@ -102,6 +102,7 @@ style.theme_use('classic')
 graph = PhotoImage(file="graf4.png")
 graph_label=ttk.Label(image=graph)
 graph_label.place(x=670, y=320)
+graph_label.destroy()
 # заполнение таблицы показаний датчиков
 async def update_val():
     t = 0
@@ -133,7 +134,6 @@ async def update_val():
             graph_label.place(x=670, y=320)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
-graph_label.destroy()
 async_handler(update_val)()
 
 
