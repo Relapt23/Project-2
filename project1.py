@@ -6,15 +6,22 @@ import asyncio
 from time import *
 from async_tkinter_loop import async_mainloop, async_handler
 import matplotlib.pyplot as plt
-data_base = {}
+data_base = {} 
+deviation_counter = {}
+recommendations = {
+    'Увеличить:': set(),
+    'Снизить:': set(),
+    'Датчики, требующие калибровки:': set()
+}
 
 
 class SensorInfo:
-    def __init__(self,name,val,delta_min,delta_max):
+    def __init__(self,name,val,delta_min,delta_max,si):
         self.name=name
         self.val=val
         self.delta_min=delta_min
         self.delta_max=delta_max
+        self.si=si
 
 
 def ran(min, max,t):
@@ -28,7 +35,7 @@ def update_items(table,sensors):
     for sensor in sensors:
         name = sensor.name
         val = sensor.val
-        delta = str(sensor.delta_min)+'-'+str(sensor.delta_max)
+        delta = str(sensor.delta_min)+'-'+str(sensor.delta_max)+str(sensor.si)
         if int(sensor.val)<int(sensor.delta_min) or int(sensor.val)>int(sensor.delta_max):
             table.insert('', 'end', values=[name,val,delta], tags = ('oddrow',))
         else:
@@ -59,7 +66,6 @@ root.iconphoto(False,icon)
 root.configure(background='white')
 
 
-
 # Текстовые поля
 Label_right = ttk.Label(text='Оценка показателей', font=('Arial', 14),background='white')
 Label_right.place(x= 150, y=25)
@@ -73,7 +79,7 @@ frame_right.place( x= 10, y= 70)
 frame_recommend=Frame(frame_right, borderwidth= 1, relief='solid', height=150, width=600,background='white')
 
 # ссылка на переменную с изменяемыми рекомендациями
-reco_label = ttk.Label(frame_recommend, text='Снизить интенсивность полива', font=('Arial', 12),background='white')
+reco_label = ttk.Label(frame_recommend, text='', font=('Arial', 12),background='white')   
 reco_label.place(x= 10, y= 10)
 frame_recommend.place( x= 10, y = 40)
 
@@ -97,8 +103,6 @@ table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
 
-
-
 # заполнение таблицы показаний датчиков
 async def update_val():
     # Прорисовка графика
@@ -107,35 +111,64 @@ async def update_val():
     t = 0
     while True:
         sensors = [
-            SensorInfo('Влажность воздуха', ran(17,40,t), 17,40), 
-            SensorInfo('Влажность почвы', ran(50,55,t), 50,55), 
-            SensorInfo('Температура воздуха', ran(4, 27, t), 4,27), 
-            SensorInfo('Температура раствора', ran(0,27,t), 0,27), 
-            SensorInfo('Давление', ran(750,780,t), 750,780), 
-            SensorInfo('Уровень раствора', ran(13,15,t), 13,15), 
-            SensorInfo('Кислотность раствора', ran(75,80,t),75,80), 
-            SensorInfo('Содержание ионов', ran(30,35,t),30,35), 
-            SensorInfo('Освещенность', ran(30,67,t),30,67),
+            SensorInfo('Влажность воздуха', ran(40,60,t), 40,60,',%'), 
+            SensorInfo('Влажность почвы', ran(90,95,t), 90,95,',%'), 
+            SensorInfo('Температура воздуха', ran(22, 24, t), 22,24,',℃'), 
+            SensorInfo('Температура раствора', ran(15,19,t), 15,19,',℃'), 
+            SensorInfo('Давление', ran(0.950,1.050,t), 0.950,1.050,',атм'), 
+            SensorInfo('Уровень раствора', ran(13,15,t), 13,15,',см'), 
+            SensorInfo('Кислотность раствора', ran(5.1,5.9,t),5.1,5.9,',pH'), 
+            SensorInfo('Содержание ионов', ran(900,1100,t),900,1100,',шт'), 
+            SensorInfo('Освещенность', ran(100,150,t),100,150,',лк'),
         ]
         update_items(table,sensors)
         await asyncio.sleep(3)
         # Построение графика
-        for i in range(len(sensors)):
-            if sensors[i].name not in data_base.keys():
-                    data_base[sensors[i].name] = [sensors[i].val]
+        for sensor in sensors:
+            if sensor.name not in data_base.keys():
+                data_base[sensor.name] = [sensor.val]
+                deviation_counter[sensor.name]=[0,0,0]
+            data_base[sensor.name].append(sensor.val)
+            if sensor.val < sensor.delta_min:
+                deviation_counter[sensor.name][0] += 1
+            elif sensor.val > sensor.delta_max:
+                deviation_counter[sensor.name][1] += 1
+            if sensor.delta_min<= sensor.val<= sensor.delta_max:
+                deviation_counter[sensor.name][2] += 1
             else:
-                data_base[sensors[i].name].append(sensors[i].val)
-            if len(data_base[sensors[i].name]) > 30:
-                data_base[sensors[i].name].pop(0)
+                deviation_counter[sensor.name][2] = 0
+
+            if len(data_base[sensor.name]) > 30:
+                data_base[sensor.name].pop(0)
+        for name in deviation_counter.keys():
+            if deviation_counter[name][0] > 5:
+                recommendations['Увеличить:'].add(name)
+                if deviation_counter[name][2] >=3:
+                    recommendations['Увеличить:'].remove(name)   
+                    deviation_counter[name][0] = 0   
+            elif deviation_counter[name][1] > 5:
+                recommendations['Снизить:'].add(name)
+                if deviation_counter[name][2] >=3:
+                    recommendations['Снизить:'].remove(name)
+                    deviation_counter[name][1] = 0
+            elif deviation_counter[name][0] > 5 and deviation_counter[name][1] > 5:
+                recommendations['Датчики, требующие калибровки:'].add(name)
+                recommendations['Увеличить:'].remove(name)
+                recommendations['Снизить:'].remove(name)
+                     
+        result = ''
+        for key, values in recommendations.items():
+            result += str(key) + '\n'
+            for value in values:
+                result += '- ' + str(value) + '\n'
+        reco_label.config(text=result)
             # Обновление графика
-            graph_label.destroy()
-            graph = PhotoImage(file="graf4.png")
-            graph_label=ttk.Label(image=graph)
-            graph_label.place(x=670, y=320)
+        graph_label.destroy()
+        graph = PhotoImage(file="graf4.png")
+        graph_label=ttk.Label(image=graph)
+        graph_label.place(x=670, y=320)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
-
-
 async_mainloop(root)
 
