@@ -9,12 +9,9 @@ import matplotlib.pyplot as plt
 data_base = {} 
 deviation_counter = {}
 recommendations = {
-    'Увеличить:':
-    set(''),
-    'Снизить:':
-    set(''),
-    'Датчики, требующие калибровки:':
-    set('')
+    'Увеличить:': set(),
+    'Снизить:': set(),
+    'Датчики, требующие калибровки:': set()
 }
 
 
@@ -173,6 +170,5 @@ async def update_val():
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
-
 async_mainloop(root)
 
