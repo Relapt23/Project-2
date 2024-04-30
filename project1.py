@@ -6,9 +6,16 @@ import asyncio
 from time import *
 from async_tkinter_loop import async_mainloop, async_handler
 import matplotlib.pyplot as plt
-import string
 data_base = {} 
 deviation_counter = {}
+recommendations = {
+    'Увеличить:':
+    set(''),
+    'Снизить:':
+    set(''),
+    'Датчики, требующие калибровки:':
+    set('')
+}
 
 
 class SensorInfo:
@@ -120,39 +127,44 @@ async def update_val():
         update_items(table,sensors)
         await asyncio.sleep(3)
         # Построение графика
-        for i in range(len(sensors)):
-            if sensors[i].name not in data_base.keys():
-                    data_base[sensors[i].name] = [sensors[i].val]
-                    if sensors[i].val < sensors[i].delta_min:
-                        deviation_counter[sensors[i].name]=[1,0,0]
-                    elif sensors[i].val > sensors[i].delta_max:
-                        deviation_counter[sensors[i].name]=[0,1,0]
-                    else:
-                        deviation_counter[sensors[i].name]=[0,0,0]
+        for sensor in sensors:
+            if sensor.name not in data_base.keys():
+                data_base[sensor.name] = [sensor.val]
+                deviation_counter[sensor.name]=[0,0,0]
+            data_base[sensor.name].append(sensor.val)
+            if sensor.val < sensor.delta_min:
+                deviation_counter[sensor.name][0] += 1
+            elif sensor.val > sensor.delta_max:
+                deviation_counter[sensor.name][1] += 1
+            if sensor.delta_min<= sensor.val<= sensor.delta_max:
+                deviation_counter[sensor.name][2] += 1
             else:
-                data_base[sensors[i].name].append(sensors[i].val)
-                if sensors[i].val < sensors[i].delta_min:
-                    deviation_counter[sensors[i].name][0] += 1
-                elif sensors[i].val > sensors[i].delta_max:
-                    deviation_counter[sensors[i].name][1] += 1
-                if sensors[i].delta_min<= sensors[i].val<= sensors[i].delta_max:
-                    deviation_counter[sensors[i].name][2] += 1
-                else:
-                    deviation_counter[sensors[i].name][2] = 0
-            if len(data_base[sensors[i].name]) > 30:
-                data_base[sensors[i].name].pop(0)
-        for sensors[i].name in deviation_counter.keys():
-            if deviation_counter[sensors[i].name][0] > int(5):
-                reco_label.config(text='Снизить '+ sensors[i].name.lower())
-                if deviation_counter[sensors[i].name][2] >=3:
-                    reco_label.config(text='')
-                    deviation_counter[sensors[i].name][0] = 0   
-            elif deviation_counter[sensors[i].name][1] > int(5):
-                reco_label.config(text='Увеличить '+ sensors[i].name.lower())
-                if deviation_counter[sensors[i].name][2] >=3:
-                    reco_label.config(text='')
-                    deviation_counter[sensors[i].name][1] = 0
+                deviation_counter[sensor.name][2] = 0
 
+            if len(data_base[sensor.name]) > 30:
+                data_base[sensor.name].pop(0)
+        for name in deviation_counter.keys():
+            if deviation_counter[name][0] > 5:
+                recommendations['Увеличить:'].add(name)
+                if deviation_counter[name][2] >=3:
+                    recommendations['Увеличить:'].remove(name)   
+                    deviation_counter[name][0] = 0   
+            elif deviation_counter[name][1] > 5:
+                recommendations['Снизить:'].add(name)
+                if deviation_counter[name][2] >=3:
+                    recommendations['Снизить:'].remove(name)
+                    deviation_counter[name][1] = 0
+            elif deviation_counter[name][0] > 5 and deviation_counter[name][1] > 5:
+                recommendations['Датчики, требующие калибровки:'].add(name)
+                recommendations['Увеличить:'].remove(name)
+                recommendations['Снизить:'].remove(name)
+                     
+        result = ''
+        for key, values in recommendations.items():
+            result += str(key) + '\n'
+            for value in values:
+                result += '- ' + str(value) + '\n'
+        reco_label.config(text=result)
             # Обновление графика
         graph_label.destroy()
         graph = PhotoImage(file="graf4.png")
