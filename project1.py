@@ -13,6 +13,17 @@ recommendations = {
     'Снизить:': set(),
     'Датчики, требующие калибровки:': set()
 }
+new_delta = {
+    'Влажность воздуха': [40,60], 
+    'Влажность почвы':[90,95],
+    'Температура воздуха':[22,24], 
+    'Температура раствора':[15,19], 
+    'Давление':[0.95,1.05], 
+    'Уровень раствора':[13,15], 
+    'Кислотность раствора':[5.1,5.9], 
+    'Содержание ионов':[900,1100], 
+    'Освещенность':[100,150],
+}
 
 
 class SensorInfo:
@@ -58,13 +69,48 @@ def item_selected(event):
             plt.savefig(fname='graf4.png')
 
 
+def click():
+    window = Tk()
+    window.title("Изменение диапазона")
+    window.geometry("200x100")
+    sensors = [
+            'Влажность воздуха', 
+            'Влажность почвы',
+            'Температура воздуха', 
+            'Температура раствора', 
+            'Давление', 
+            'Уровень раствора', 
+            'Кислотность раствора', 
+            'Содержание ионов', 
+            'Освещенность',
+    ]
+    def callback(eventObject):
+        combobox.get()
+    def enter_new_delta():
+        new_delta[combobox.get()] = [int(entry_min.get()),int(entry_max.get())]
+
+
+    combobox = ttk.Combobox(window,values=sensors,font=('Arial', 12),state='readonly')
+    combobox.bind("<<ComboboxSelected>>", callback)
+    combobox.pack(fill=X, ipadx=6,ipady=6)
+    entry_min = ttk.Entry(window,width=2)
+    entry_min.place(x=120,y=40)
+    entry_max = ttk.Entry(window,width=2)
+    entry_max.place(x=150,y=40)
+    get_button = ttk.Button(window, text="Выбор", command=enter_new_delta)
+    get_button.place(anchor='center',x=100,y=80)
+    label = ttk.Label(window,text='Новый диапазон:', font=('Arial', 10))
+    label.place(x=10,y=40)
+    tire = ttk.Label(window,text=' - ', font=('Arial', 10))
+    tire.place(x=135,y=40)
+
+
 root= Tk()
 root.title('Climat-control system')
 root.geometry("1250x500")
 icon =PhotoImage(file="save_nature.png")
 root.iconphoto(False,icon)
 root.configure(background='white')
-
 
 # Текстовые поля
 Label_right = ttk.Label(text='Оценка показателей', font=('Arial', 14),background='white')
@@ -109,17 +155,20 @@ async def update_val():
     graph = PhotoImage(file="graf4.png")
     graph_label=ttk.Label(image=graph)
     t = 0
+    # Создание окна изменения диапазона датчиков
+    btn = ttk.Button(text='Изменение диапазона',command=click)
+    btn.place(x=900,y=300)
     while True:
         sensors = [
-            SensorInfo('Влажность воздуха', ran(40,60,t), 40,60,',%'), 
-            SensorInfo('Влажность почвы', ran(90,95,t), 90,95,',%'), 
-            SensorInfo('Температура воздуха', ran(22, 24, t), 22,24,',℃'), 
-            SensorInfo('Температура раствора', ran(15,19,t), 15,19,',℃'), 
-            SensorInfo('Давление', ran(0.950,1.050,t), 0.950,1.050,',атм'), 
-            SensorInfo('Уровень раствора', ran(13,15,t), 13,15,',см'), 
-            SensorInfo('Кислотность раствора', ran(5.1,5.9,t),5.1,5.9,',pH'), 
-            SensorInfo('Содержание ионов', ran(900,1100,t),900,1100,',шт'), 
-            SensorInfo('Освещенность', ran(100,150,t),100,150,',лк'),
+            SensorInfo('Влажность воздуха', ran(new_delta['Влажность воздуха'][0],new_delta['Влажность воздуха'][1],t), new_delta['Влажность воздуха'][0],new_delta['Влажность воздуха'][1],',%'), 
+            SensorInfo('Влажность почвы', ran(new_delta['Влажность почвы'][0],new_delta['Влажность почвы'][1],t), new_delta['Влажность почвы'][0],new_delta['Влажность почвы'][1],',%'), 
+            SensorInfo('Температура воздуха', ran(new_delta['Температура воздуха'][0],new_delta['Температура воздуха'][1],t), new_delta['Температура воздуха'][0],new_delta['Температура воздуха'][1],',℃'), 
+            SensorInfo('Температура раствора', ran(new_delta['Температура раствора'][0],new_delta['Температура раствора'][1],t), new_delta['Температура раствора'][0],new_delta['Температура раствора'][1],',℃'), 
+            SensorInfo('Давление', ran(new_delta['Давление'][0],new_delta['Давление'][1],t), new_delta['Давление'][0],new_delta['Давление'][1],',атм'), 
+            SensorInfo('Уровень раствора', ran(new_delta['Уровень раствора'][0],new_delta['Уровень раствора'][1],t), new_delta['Уровень раствора'][0],new_delta['Уровень раствора'][1],',см'), 
+            SensorInfo('Кислотность раствора', ran(new_delta['Кислотность раствора'][0],new_delta['Кислотность раствора'][1],t), new_delta['Кислотность раствора'][0],new_delta['Кислотность раствора'][1],',pH'), 
+            SensorInfo('Содержание ионов', ran(new_delta['Содержание ионов'][0],new_delta['Содержание ионов'][1],t), new_delta['Содержание ионов'][0],new_delta['Содержание ионов'][1],',шт'), 
+            SensorInfo('Освещенность', ran(new_delta['Освещенность'][0],new_delta['Освещенность'][1],t), new_delta['Освещенность'][0],new_delta['Освещенность'][1],',лк'),
         ]
         update_items(table,sensors)
         await asyncio.sleep(3)
@@ -166,7 +215,7 @@ async def update_val():
         graph_label.destroy()
         graph = PhotoImage(file="graf4.png")
         graph_label=ttk.Label(image=graph)
-        graph_label.place(x=670, y=320)
+        graph_label.place(x=670, y=350)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
