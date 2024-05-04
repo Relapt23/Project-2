@@ -6,6 +6,8 @@ import asyncio
 from time import *
 from async_tkinter_loop import async_mainloop, async_handler
 import matplotlib.pyplot as plt
+from openai import OpenAI
+from gpt import perform_request_chatGPT 
 data_base = {} 
 deviation_counter = {}
 recommendations = {
@@ -84,14 +86,11 @@ def click():
             'Содержание ионов', 
             'Освещенность',
     ]
-    def callback(eventObject):
-        combobox.get()
     def enter_new_delta():
         new_delta[combobox.get()] = [int(entry_min.get()),int(entry_max.get())]
 
 
     combobox = ttk.Combobox(window,values=sensors,font=('Arial', 12),state='readonly')
-    combobox.bind("<<ComboboxSelected>>", callback)
     combobox.pack(fill=X, ipadx=6,ipady=6)
     entry_min = ttk.Entry(window,width=2)
     entry_min.place(x=120,y=40)
@@ -104,10 +103,13 @@ def click():
     tire = ttk.Label(window,text=' - ', font=('Arial', 10))
     tire.place(x=135,y=40)
 
+def click_GPT():
+    res = perform_request_chatGPT(data_base)
+    text55.insert("1.0", res.content)
 
 root= Tk()
 root.title('Climat-control system')
-root.geometry("1250x500")
+root.geometry("1250x800")
 icon =PhotoImage(file="save_nature.png")
 root.iconphoto(False,icon)
 root.configure(background='white')
@@ -148,6 +150,14 @@ table.heading('val', text='Значение')
 table.heading('delta', text='Диапазон нормы')
 style = ttk.Style()
 style.theme_use('classic')
+# Создание окна изменения диапазона датчиков
+btn = ttk.Button(text='Изменение диапазона',command=click)
+btn.place(x=800,y=300)
+# Создание кпопки для запроса к ChatGPT
+ChatGPT_btn = ttk.Button(text='Запрос рекомендаций', command=click_GPT)
+ChatGPT_btn.place(x=1000,y=300)
+text55 = Text(frame_reco_info,font=('Arial', 10),background='white',wrap='word')
+text55.place(x=10, y=10)
 
 # заполнение таблицы показаний датчиков
 async def update_val():
@@ -155,9 +165,6 @@ async def update_val():
     graph = PhotoImage(file="graf4.png")
     graph_label=ttk.Label(image=graph)
     t = 0
-    # Создание окна изменения диапазона датчиков
-    btn = ttk.Button(text='Изменение диапазона',command=click)
-    btn.place(x=900,y=300)
     while True:
         sensors = [
             SensorInfo('Влажность воздуха', ran(new_delta['Влажность воздуха'][0],new_delta['Влажность воздуха'][1],t), new_delta['Влажность воздуха'][0],new_delta['Влажность воздуха'][1],',%'), 
