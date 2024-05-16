@@ -6,7 +6,6 @@ import asyncio
 from time import *
 from async_tkinter_loop import async_mainloop, async_handler
 import matplotlib.pyplot as plt
-from openai import OpenAI
 from gpt import perform_request_chatGPT 
 data_base = {} 
 deviation_counter = {}
@@ -103,9 +102,14 @@ def click():
     tire = ttk.Label(window,text=' - ', font=('Arial', 10))
     tire.place(x=135,y=40)
 
+
 def click_GPT():
-    res = perform_request_chatGPT(data_base)
+    res = perform_request_chatGPT(data_base,entry_plan,entry_fact)
     text55.insert("1.0", res.content)
+
+def click2():
+    if float(entry_plan.get()) > float(entry_fact.get()):
+        click_GPT()
 
 root= Tk()
 root.title('Climat-control system')
@@ -125,7 +129,15 @@ reco_info = ttk.Label(frame_right, text='Рекомендация:', font=('Aria
 reco_info.place(x=15, y= 10)
 frame_right.place( x= 10, y= 70)
 frame_recommend=Frame(frame_right, borderwidth= 1, relief='solid', height=150, width=600,background='white')
-
+# Поля для заполнения план/факта урожая
+Label_plan_fact = ttk.Label(text='Заполните ожидаемый и полученный урожай:', font=('Arial', 12), background='white')
+Label_plan_fact.place(x=700,y=350)
+entry_plan = ttk.Entry(width=3)
+entry_plan.place(x=1050,y=350)
+entry_fact = ttk.Entry(width=3)
+entry_fact.place(x=1100,y=350)
+Plan_fact_button = ttk.Button(text="Подтвердить", command=click2)
+Plan_fact_button.place(x=950, y=375)
 # ссылка на переменную с изменяемыми рекомендациями
 reco_label = ttk.Label(frame_recommend, text='', font=('Arial', 12),background='white')   
 reco_label.place(x= 10, y= 10)
@@ -137,7 +149,7 @@ reco_info_label.place(x=15, y= 200)
 frame_reco_info =Frame(frame_right, borderwidth=1, relief=SOLID, height=350, width=600,background='white')
 frame_reco_info.place(x=10, y= 230)
 
-# создание таблицы
+# создание таблицыq
 columns = ('name', 'val','delta')
 table = ttk.Treeview(columns=columns, show='headings',selectmode='extended')
 table.tag_configure('oddrow', background='orange')
@@ -222,7 +234,7 @@ async def update_val():
         graph_label.destroy()
         graph = PhotoImage(file="graf4.png")
         graph_label=ttk.Label(image=graph)
-        graph_label.place(x=670, y=350)
+        graph_label.place(x=670, y=415)
         t += 3
 table.bind("<<TreeviewSelect>>", item_selected)
 async_handler(update_val)()
